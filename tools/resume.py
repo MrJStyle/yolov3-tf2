@@ -1,24 +1,22 @@
-import os
 import json
-import hashlib
 import re
 
 from collections import defaultdict
+from pathlib import Path
 from re import Pattern, Match
 from typing import Dict, Generator, Tuple
 
-import tqdm
-import lxml.etree
 import tensorflow as tf
 
+from tqdm import tqdm
 from absl.flags import FLAGS
 from absl import app, flags, logging
 from tensorflow.core.example.example_pb2 import Example
+from tensorflow.python.lib.io.tf_record import TFRecordWriter
 
-flags.DEFINE_string("data_dir", None, "path to raw resum dataset")
+flags.DEFINE_string("data_dir", "/home/mrj/Sundry/resume_labels/labels_json", "path to raw resume dataset")
 flags.DEFINE_enum("split", "train", ["train", "val"], "specify train or val split")
-flags.DEFINE_string("output_file", None, "output_dataset")
-flags.DEFINE_string("classes", None, "classes file")
+flags.DEFINE_string("output_file", "/home/mrj/Sundry/resume_labels/output.tfrecord", "output_dataset")
 
 
 def load_json_file(path: str) -> Dict:
@@ -98,16 +96,35 @@ def build_example(file_name: str, img_info: Dict) -> Example:
     return tf_example
 
 
+def generate_single_tf_record(img_info: Dict, file_name: str, writer: TFRecordWriter) -> None:
+    tf_example: Example = build_example(file_name, img_info)
+    writer.write(tf_example.SerializeToString())
+
+
 def main(_argv):
     del _argv
 
-    print(FLAGS.data_dir)
+    data_dir: str = FLAGS.data_dir
+    output_file: str = FLAGS.output_file
+    # split_method: str = FLAGS.split
+
+    file_in_dir_iter: Generator = read_file_path_in_dir(data_dir)
+
+    with tf.io.TFRecordWriter(output_file) as writer:
+        file_path: str
+        for file_path in tqdm(file_in_dir_iter):
+            img_label_json: Dict = load_json_file(file_path)
+            file_name, _ = get_name_from_path(file_path)
+
+            generate_single_tf_record(img_label_json, file_name, writer)
+
+            logging.info(f"save {file_name}")
 
 
 if __name__ == '__main__':
-    # app.run(main)
-    path = "/home/mrj/Sundry/resume_labels/00001.json"
-    j = load_json_file(path)
-    file_name, _ = get_name_from_path(path)
-
-    print(build_example(file_name, j))
+    app.run(main)
+    # path = "/home/mrj/Sundry/resume_labels/00001.json"
+    # j = load_json_file(path)
+    # file_name, _ = get_name_from_path(path)
+    #
+    # print(build_example(file_name, j))
