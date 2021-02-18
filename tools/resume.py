@@ -1,5 +1,6 @@
 import json
 import re
+import base64
 
 from collections import defaultdict
 from pathlib import Path
@@ -17,6 +18,7 @@ from tensorflow.python.lib.io.tf_record import TFRecordWriter
 flags.DEFINE_string("data_dir", "/home/mrj/Sundry/resume_labels/labels_json", "path to raw resume dataset")
 flags.DEFINE_enum("split", "train", ["train", "val"], "specify train or val split")
 flags.DEFINE_string("output_file", "/home/mrj/Sundry/resume_labels/output.tfrecord", "output_dataset")
+# flags.DEFINE_string("classes", "/home/mrj/Sundry/resume_labels/resume_classes.names", "classes_file")
 
 
 def load_json_file(path: str) -> Dict:
@@ -59,7 +61,7 @@ def build_example(file_name: str, img_info: Dict) -> Example:
     """
     data: defaultdict = defaultdict(list)
 
-    encoded_image_data: bytes = img_info["imageData"].encode("utf8")
+    encoded_image_data: bytes = base64.b64decode(img_info["imageData"])
     all_labels = img_info["shapes"]
     img_width: int = img_info["imageWidth"]
     img_height: int = img_info["imageHeight"]
