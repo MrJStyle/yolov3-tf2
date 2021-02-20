@@ -18,7 +18,9 @@ from tensorflow.python.lib.io.tf_record import TFRecordWriter
 flags.DEFINE_string("data_dir", "/home/mrj/Sundry/resume_labels/labels_json", "path to raw resume dataset")
 flags.DEFINE_enum("split", "train", ["train", "val"], "specify train or val split")
 flags.DEFINE_string("output_file", "/home/mrj/Sundry/resume_labels/output.tfrecord", "output_dataset")
-# flags.DEFINE_string("classes", "/home/mrj/Sundry/resume_labels/resume_classes.names", "classes_file")
+flags.DEFINE_string("classes", "/home/mrj/Sundry/resume_labels/resume_classes_v2.names", "classes_file")
+
+classes_map: Dict = {}
 
 
 def load_json_file(path: str) -> Dict:
@@ -70,7 +72,7 @@ def build_example(file_name: str, img_info: Dict) -> Example:
 
     for label in all_labels:
         data["classes_text"].append(label["label"].encode("utf8"))
-        data["classes"].append(label["group_id"])
+        data["classes"].append(classes_map[label["label"]])
 
         data["xmins"].append(label["points"][0][0] / img_width)
         data["xmaxs"].append(label["points"][1][0] / img_width)
@@ -104,11 +106,14 @@ def generate_single_tf_record(img_info: Dict, file_name: str, writer: TFRecordWr
 
 
 def main(_argv):
+    global classes_map
+
     del _argv
 
     data_dir: str = FLAGS.data_dir
     output_file: str = FLAGS.output_file
     # split_method: str = FLAGS.split
+    classes_map = {name: idx for idx, name in enumerate(open(FLAGS.classes).read().splitlines())}
 
     file_in_dir_iter: Generator = read_file_path_in_dir(data_dir)
 
