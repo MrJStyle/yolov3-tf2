@@ -1,7 +1,10 @@
-from absl import logging
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
+import matplotlib.pyplot as plt
+
+from absl import logging
+
 
 YOLOV3_LAYER_LIST = [
     'yolo_darknet',
@@ -109,9 +112,31 @@ def draw_outputs(img, outputs, class_names):
         img = cv2.rectangle(img, x1y1, x2y2, (255, 0, 0), 2)
         img = cv2.putText(img, '{} {:.4f}'.format(
             class_names[int(classes[i])], objectness[i]),
-            x1y1, cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+            x1y1, cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 4)
     return img
 
+
+def draw_detect_bbox(img, outputs, class_names):
+    boxes, scores, classes, nums = outputs
+    boxes, scores, classes, nums = boxes[0], scores[0], classes[0], nums[0]
+    wh = np.flip(img.shape[0: 2])
+
+    plt.figure(figsize=(20, 20))
+    for i in range(nums):
+        x1y1 = boxes[i][0: 2] * wh
+        x2y2 = boxes[i][2: 4] * wh
+
+        x1, y1 = tf.cast(x1y1, tf.int32).numpy()
+        x2, y2 = tf.cast(x2y2, tf.int32).numpy()
+
+        plt.subplot(nums.numpy(), 1, int(f"{i + 1}"))
+        plt.title(
+            f"{class_names[int(classes[i].numpy())]}---{str(scores[i].numpy())}",
+        )
+        plt.axis("off")
+        plt.imshow(img[y1: y2, x1:x2])
+
+    plt.show()
 
 def draw_labels(x, y, class_names):
     img = x.numpy()
