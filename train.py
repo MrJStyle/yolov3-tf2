@@ -28,7 +28,7 @@ flags.DEFINE_enum('mode', 'fit', ['fit', 'eager_fit', 'eager_tf'],
                   'fit: model.fit, '
                   'eager_fit: model.fit(run_eagerly=True), '
                   'eager_tf: custom GradientTape')
-flags.DEFINE_enum('transfer', 'none',
+flags.DEFINE_enum('transfer', 'darknet',
                   ['none', 'darknet', 'no_output', 'frozen', 'fine_tune'],
                   'none: Training from scratch, '
                   'darknet: Transfer darknet, '
@@ -42,6 +42,7 @@ flags.DEFINE_float('learning_rate', 1e-3, 'learning rate')
 flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
 flags.DEFINE_integer('weights_num_classes', None, 'specify num class for `weights` file if different, '
                      'useful in transfer learning with different number of classes')
+flags.DEFINE_string("output_of_final_weight", ".weights/final_weights.tf", "the final output weights of training model")
 
 
 def main(_argv):
@@ -184,10 +185,18 @@ def main(_argv):
             TensorBoard(log_dir='logs')
         ]
 
-        history = model.fit(train_dataset,
-                            epochs=FLAGS.epochs,
-                            callbacks=callbacks,
-                            validation_data=val_dataset)
+        model.summary()
+
+        history = model.fit(
+            train_dataset,
+            epochs=FLAGS.epochs,
+            callbacks=callbacks,
+            validation_data=val_dataset
+        )
+
+        model.save_weights(
+            FLAGS.output_of_final_weight
+        )
 
 
 if __name__ == '__main__':
