@@ -284,6 +284,8 @@ def YoloLoss(anchors, classes=80, ignore_thresh=0.5):
         true_wh = tf.math.log(true_wh / anchors)
         true_wh = tf.where(tf.math.is_inf(true_wh),
                            tf.zeros_like(true_wh), true_wh)
+        true_wh = tf.where(tf.math.is_nan(true_wh),
+                           tf.zeros_like(true_wh), true_wh)
 
         # 4. calculate all masks
         obj_mask = tf.squeeze(true_obj, -1)
