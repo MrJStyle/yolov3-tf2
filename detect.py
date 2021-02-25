@@ -4,11 +4,12 @@ from absl.flags import FLAGS
 import cv2
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from yolov3_tf2.models import (
     YoloV3, YoloV3Tiny
 )
 from yolov3_tf2.dataset import transform_images, load_tfrecord_dataset
-from yolov3_tf2.utils import draw_outputs
+from yolov3_tf2.utils import draw_outputs, draw_detect_bbox
 
 flags.DEFINE_string('classes', './data/coco.names', 'path to classes file')
 flags.DEFINE_string('weights', './checkpoints/yolov3.tf',
@@ -18,7 +19,12 @@ flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_string('image', './data/girl.png', 'path to input image')
 flags.DEFINE_string('tfrecord', None, 'tfrecord instead of image')
 flags.DEFINE_string('output', './output.jpg', 'path to output image')
-flags.DEFINE_integer('num_classes', 80, 'number of classes in the model')
+flags.DEFINE_integer('num_classes', 2, 'number of classes in the model')
+flags.DEFINE_boolean("show", True, "show result or output to a file")
+flags.DEFINE_boolean("show_detect_bbox", False, "show detect bbox when set it True")
+
+
+plt.figure(figsize=(20, 20))
 
 
 def main(_argv):
@@ -60,8 +66,19 @@ def main(_argv):
                                            np.array(scores[0][i]),
                                            np.array(boxes[0][i])))
 
+    if FLAGS.show_detect_bbox:
+        draw_detect_bbox(img_raw.numpy(), (boxes, scores, classes, nums), class_names)
+        return
+
     img = cv2.cvtColor(img_raw.numpy(), cv2.COLOR_RGB2BGR)
     img = draw_outputs(img, (boxes, scores, classes, nums), class_names)
+
+    if FLAGS.show:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        plt.imshow(img)
+        plt.show()
+        return
+
     cv2.imwrite(FLAGS.output, img)
     logging.info('output saved to: {}'.format(FLAGS.output))
 
